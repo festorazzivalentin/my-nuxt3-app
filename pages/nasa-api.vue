@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 const { data: apod, error } = await useFetch('https://api.nasa.gov/planetary/apod?api_key=alsel4xFJg4x6CFVy7aGgRDErx0eCW1K0WXBcLNl&count=1');
 
 const currentIndex = ref(0);
@@ -20,6 +20,25 @@ function toggleExplanation() {
 
 // Reset index if data changes
 watch(apod, () => { currentIndex.value = 0; });
+
+function closeZoomOnOutside(e) {
+  if (zoomed.value) {
+    // Si el target no es la imagen, cerrar zoom
+    const img = document.querySelector('.nasa-img.zoomed');
+    if (img && !img.contains(e.target)) {
+      zoomed.value = false;
+    }
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', closeZoomOnOutside);
+  document.addEventListener('touchstart', closeZoomOnOutside);
+});
+onBeforeUnmount(() => {
+  document.removeEventListener('click', closeZoomOnOutside);
+  document.removeEventListener('touchstart', closeZoomOnOutside);
+});
 </script>
 <template>
   <div class="nasa-api-main">
@@ -33,8 +52,8 @@ watch(apod, () => { currentIndex.value = 0; });
             :alt="apod[currentIndex]?.title"
             class="nasa-img"
             :class="{ zoomed: zoomed }"
-            @click="toggleZoom"
-            @touchstart.prevent="toggleZoom"
+            @click.stop="toggleZoom"
+            @touchstart.stop.prevent="toggleZoom"
             title="Haz clic o toca para hacer zoom"
           />
         </div>
@@ -104,7 +123,7 @@ watch(apod, () => { currentIndex.value = 0; });
   background: #e0e7ef;
   box-shadow: 0 2px 12px 0 rgba(58,134,255,0.08);
   cursor: zoom-in;
-  transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s, border-radius 0.3s, background 0.3s;
   font-family: inherit;
   position: relative;
   z-index: 1;
